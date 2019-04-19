@@ -28,8 +28,5 @@ def get_content_from_url(url):
     :param url: string that represents url
     :return: Content
     """
-    try:
-        content = urlopen(Request(url))
-        return content
-    except Exception:
-        return None
+    return urlopen(Request(url))
+
