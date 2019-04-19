@@ -52,6 +52,16 @@ def get_url(response):
     return response.geturl()
 
 
+def get_filename_from_url(url):
+    """
+    Get filename from url
+
+    :param url: string url
+    :return: string filename
+    """
+    return url[url.rfind('/')+1:]
+
+
 def is_response_pdf_file(response):
     """
     Checks if the Content-Type header from the response is pdf
