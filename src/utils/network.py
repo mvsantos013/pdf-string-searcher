@@ -12,12 +12,24 @@ regex_url = re.compile(
 
 
 def is_valid_url(url):
+    """
+    Checks if url is valid
+
+    :param url: string that represents url
+    :return: Boolean value, True if valid url
+    """
     return re.match(regex_url, url) is not None
 
 
 def get_content_from_url(url):
+    """
+    Get content from webpage
+
+    :param url: string that represents url
+    :return: Content
+    """
     try:
-        content = urlopen(Request(pdf_url))
+        content = urlopen(Request(url))
         return content
     except Exception:
         return None
