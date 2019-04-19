@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from io import BytesIO
 
 def trim_whitespace(string):
     """
@@ -23,3 +23,13 @@ def trim_whitespace(string):
         bf = bf + letter
 
     return bf.strip()
+
+
+def binary_to_file(data):
+    """
+    Parses binary data to file
+
+    :param data:
+    :return: file
+    """
+    return BytesIO(data)
