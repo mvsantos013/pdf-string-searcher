@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import utils.network as network
 import utils.util as util
 from pdf.pdfstringsearcher import PdfStringSearcher
