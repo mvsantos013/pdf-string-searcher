@@ -181,6 +181,7 @@ class Application:
         """
         Reopen inputs and close log file.
         """
+        self.searching = False
         self.append_to_text_area("\nBusca completa.\n", log=True)
         self.link.configure(state=NORMAL)
         self.expressao.configure(state=NORMAL)
