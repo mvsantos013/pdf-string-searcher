@@ -38,14 +38,14 @@ class Application:
         self.link_label = Label(self.master, text="Link", font=self.default_font)
         self.link_label.grid(row=1, sticky=W, ipadx=0.1*self.width, pady=10)
 
-        self.link = Entry(self.master, width=50, font=self.default_font)
-        self.link.grid(row=1, column=1, sticky=W)
+        self.link_input = Entry(self.master, width=50, font=self.default_font)
+        self.link_input.grid(row=1, column=1, sticky=W)
 
-        self.expressao_label = Label(self.master, text="Expressão", font=self.default_font)
-        self.expressao_label.grid(row=2, sticky=W, ipadx=0.1*self.width)
+        self.expression_label = Label(self.master, text="Expressão", font=self.default_font)
+        self.expression_label.grid(row=2, sticky=W, ipadx=0.1*self.width)
 
-        self.expressao = Entry(self.master, width=50, font=self.default_font)
-        self.expressao.grid(row=2, column=1, sticky=W)
+        self.expression_input = Entry(self.master, width=50, font=self.default_font)
+        self.expression_input.grid(row=2, column=1, sticky=W)
 
         self.pesquisar_button = Button(self.master, text="Pesquisar", font=self.default_font, width=14, command=self.verify_inputs)
         self.pesquisar_button.grid(row=3, column=0, columnspan=2, pady=15)
@@ -64,6 +64,8 @@ class Application:
         self.log = None
         self.queue = None
         self.searching = False
+        self.link = None
+        self.expression = None
 
     def append_to_text_area(self, string, clean=False, tag=None, log=False):
         """
@@ -87,10 +89,13 @@ class Application:
         """
         Verify inputs before initiating search.
         """
-        if not self.link.get() or not self.expressao.get():
+        self.link = self.link_input.get().encode('utf-8').strip()
+        self.expression = self.expression_input.get().encode('utf-8')
+
+        if not self.link or not self.expression:
             self.append_to_text_area("Preencha os campos obrigatórios e tente novamente.", True)
             return
-        if not network.is_valid_url(self.link.get().strip()):
+        if not network.is_valid_url(self.link):
             self.append_to_text_area("Link inválido, tente novamente. (Verifique se há http:// ou https:// no início)", True)
             return
         self.append_to_text_area("", True)
@@ -103,15 +108,15 @@ class Application:
         """
         self.pesquisar_button.configure(state=DISABLED)
         self.cancelar_button.configure(state=NORMAL)
-        self.link.configure(state=DISABLED)
-        self.expressao.configure(state=DISABLED)
+        self.link_input.configure(state=DISABLED)
+        self.expression_input.configure(state=DISABLED)
         self.searching = True
 
         timestamp = time.strftime("%Y%m%d-%H%M%S") + ".log.txt"
         self.log = open('log/' + timestamp, "w")
         self.log.write("Resultados da busca\n")
-        self.log.write("Expressão: " + self.expressao.get() + "\n")
-        self.log.write("Link: " + self.link.get().strip() + "\n")
+        self.log.write("Expressão: " + self.expression + "\n")
+        self.log.write("Link: " + self.link + "\n")
         self.log.write("-------------------\n\n")
 
         self.master.after(200, self.search_url)
@@ -122,11 +127,10 @@ class Application:
         """
         self.pdfs_links = []
         self.pdf_index = 0
-        link = self.link.get().strip()
 
         # Return if url response error
         try:
-            response = network.get_response_from_url(link)
+            response = network.get_response_from_url(self.link)
         except Exception:
             self.append_to_text_area("Algo de errado aconteceu, tente estas instruções:\n", True)
             self.append_to_text_area("  - Verificar a conexão com a internet.\n")
@@ -136,7 +140,7 @@ class Application:
 
         # Check if url is already a pdf, if not search for all pdfs in the url.
         if network.is_response_pdf_file(response):
-            self.pdfs_links.append(link)
+            self.pdfs_links.append(self.link)
         else:
             self.pdfs_links = network.extract_pdfs_links(response)
 
@@ -146,10 +150,10 @@ class Application:
 
         self.append_to_text_area("Estas informações serão salvas na pasta: %s\\log\\\n\n" % os.getcwd(), True)
         self.append_to_text_area("(%d) PDFs encontrados no link fornecido.\n" % len(self.pdfs_links), log=True)
-        self.append_to_text_area("Começando busca pela expressão '" + self.expressao.get() + "'.\n\n", log=True)
+        self.append_to_text_area("Começando busca pela expressão '" + self.expression + "'.\n\n", log=True)
 
         self.queue = Queue.Queue()
-        PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
+        PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expression).start()
 
         self.master.after(100, self.process_queue)
 
@@ -170,7 +174,7 @@ class Application:
                         self.append_to_text_area(">>> Expressão encontrada em '" + task_result + "'\n", tag='success', log=True)
                     self.pdf_index += 1
 
-                    PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
+                    PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expression).start()
                     self.master.after(100, self.process_queue)
                 else:
                     self.end_search()
@@ -183,8 +187,8 @@ class Application:
         """
         self.searching = False
         self.append_to_text_area("\nBusca completa.\n", log=True)
-        self.link.configure(state=NORMAL)
-        self.expressao.configure(state=NORMAL)
+        self.link_input.configure(state=NORMAL)
+        self.expression_input.configure(state=NORMAL)
         self.pesquisar_button.configure(state=NORMAL)
         self.cancelar_button.configure(state=DISABLED)
         self.log.close()
