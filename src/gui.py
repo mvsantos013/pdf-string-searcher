@@ -48,7 +48,10 @@ class Application:
         self.expressao.grid(row=2, column=1, sticky=W)
 
         self.pesquisar_button = Button(self.master, text="Pesquisar", font=self.default_font, width=14, command=self.verify_inputs)
-        self.pesquisar_button.grid(row=3, pady=15, columnspan=7)
+        self.pesquisar_button.grid(row=3, column=0, columnspan=2, pady=15)
+
+        self.cancelar_button = Button(self.master, text="Parar", state=DISABLED, font=self.default_font, width=10, command=self.cancel_search)
+        self.cancelar_button.grid(row=3, column=1, padx=50)
 
         self.text_pad = Frame(master=self.master)
         self.text_area = tkst.ScrolledText(master=self.text_pad, wrap=WORD, height=28, width=110, state=NORMAL, bg="black", fg="white", font=("Arial", "10"))
@@ -60,6 +63,7 @@ class Application:
         self.pdf_index = 0
         self.log = None
         self.queue = None
+        self.searching = False
 
     def append_to_text_area(self, string, clean=False, tag=None, log=False):
         """
@@ -97,10 +101,11 @@ class Application:
         """
         Blocks inputs, set log file and initiate url search.
         """
-        self.pesquisar_button["text"] = "Aguarde..."
         self.pesquisar_button.configure(state=DISABLED)
+        self.cancelar_button.configure(state=NORMAL)
         self.link.configure(state=DISABLED)
         self.expressao.configure(state=DISABLED)
+        self.searching = True
 
         timestamp = time.strftime("%Y%m%d-%H%M%S") + ".log.txt"
         self.log = open('log/' + timestamp, "w")
@@ -154,18 +159,21 @@ class Application:
         not freezing GUI. A search thread task is a running function looking for string in a pdf.
         """
         try:
-            task_result = self.queue.get(0)
-            if task_result != 'end_of_list':
-                link = network.get_filename_from_url(self.pdfs_links[self.pdf_index])
-                self.append_to_text_area("(%d/%d) Verificando '%s'.\n" % (self.pdf_index + 1, len(self.pdfs_links), link), log=True)
-                if task_result:
-                    self.append_to_text_area(">>> Expressão encontrada em '" + task_result + "'\n", tag='success', log=True)
-                self.pdf_index += 1
-
-                PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
-                self.master.after(100, self.process_queue)
-            else:
+            if not self.searching:
                 self.end_search()
+            else:
+                task_result = self.queue.get(0)
+                if task_result != 'end_of_list':
+                    link = network.get_filename_from_url(self.pdfs_links[self.pdf_index])
+                    self.append_to_text_area("(%d/%d) Verificando '%s'.\n" % (self.pdf_index + 1, len(self.pdfs_links), link), log=True)
+                    if task_result:
+                        self.append_to_text_area(">>> Expressão encontrada em '" + task_result + "'\n", tag='success', log=True)
+                    self.pdf_index += 1
+
+                    PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
+                    self.master.after(100, self.process_queue)
+                else:
+                    self.end_search()
         except Queue.Empty:
             self.master.after(100, self.process_queue)
 
@@ -177,8 +185,15 @@ class Application:
         self.link.configure(state=NORMAL)
         self.expressao.configure(state=NORMAL)
         self.pesquisar_button.configure(state=NORMAL)
-        self.pesquisar_button["text"] = "Pequisar"
+        self.cancelar_button.configure(state=DISABLED)
         self.log.close()
+
+    def cancel_search(self):
+        """
+        Force search to stop
+        """
+        self.append_to_text_area("\nParada forçada.\n", log=True)
+        self.searching = False
 
 
 class PdfStringSearcherTask(threading.Thread):
