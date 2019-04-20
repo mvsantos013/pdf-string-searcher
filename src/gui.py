@@ -123,11 +123,10 @@ class Application:
         try:
             response = network.get_response_from_url(link)
         except Exception:
-            self.append_to_text_area("Algo de errado aconteceu.\n", True)
-            self.append_to_text_area("Tente estas instruções:\n")
-            self.append_to_text_area("    - Verificar a conexão com a internet.\n")
-            self.append_to_text_area("    - Tentar um novo link.\n")
-            self.encerra_verificacao()
+            self.append_to_text_area("Algo de errado aconteceu, tente estas instruções:\n", True)
+            self.append_to_text_area("  - Verificar a conexão com a internet.\n")
+            self.append_to_text_area("  - Tentar um novo link.\n")
+            self.end_search()
             return
 
         # Check if url is already a pdf, if not search for all pdfs in the url.
