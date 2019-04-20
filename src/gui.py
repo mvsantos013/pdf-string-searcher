@@ -145,7 +145,7 @@ class Application:
         self.append_to_text_area("Começando busca pela expressão '" + self.expressao.get() + "'.\n\n", log=True)
 
         self.queue = Queue.Queue()
-        VerificaPdfListTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
+        PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
 
         self.master.after(100, self.process_queue)
 
@@ -163,7 +163,7 @@ class Application:
                     self.append_to_text_area(">>> Expressão encontrada em '" + task_result + "'\n", tag='success', log=True)
                 self.pdf_index += 1
 
-                VerificaPdfListTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
+                PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressao.get()).start()
                 self.master.after(100, self.process_queue)
             else:
                 self.end_search()
@@ -182,7 +182,7 @@ class Application:
         self.log.close()
 
 
-class VerificaPdfListTask(threading.Thread):
+class PdfStringSearcherTask(threading.Thread):
     """
     This class takes care of pdf string search, it runs in a separated thread so it doesn't freeze the GUI.
     """
