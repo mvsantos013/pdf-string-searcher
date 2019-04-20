@@ -7,10 +7,10 @@ from pdf.pdfstringsearcher import PdfStringSearcher
 if __name__ == '__main__':
     # Defines url
     # It can be a pdf link or a link containing several links to pdfs
-    url = "http://siarq.ufrj.br/index.php/boletim-ufrj/2-uncategorised/66-boletim-ufrj-2018"
+    url = "http://www.africau.edu/images/default/sample.pdf"
 
     # Expression to be searched
-    expression = "Professor"
+    expression = "Boring"
 
     # Get response from url
     response = network.get_response_from_url(url)
