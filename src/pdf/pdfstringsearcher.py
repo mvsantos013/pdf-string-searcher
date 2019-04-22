@@ -25,21 +25,24 @@ class PdfStringSearcher(list):
             self.device = TextConverter(self.resmgr, outfp=StringIO())
             self.interpreter = PDFPageInterpreter(self.resmgr, self.device)
 
-    def contains_substring(self, search_string):
+    def search_substrings(self, list_substrings):
         """
         Search for the string in each page, if it contains the string
 
-        :param search_string: Substring to be searched
-        :return: Boolean, True if contains, False if not
+        :param list_substrings: list of strings to be searched
+        :return: list of expressions found
         """
+        found = []
         for page in self.doc.get_pages():
+            if found == list_substrings:
+                break
             page_text = self.interpreter.process_page(page)
-            has_string = re.search(search_string, page_text, re.IGNORECASE)
-            if has_string:
-                self._cleanup()
-                return True
+            for string in list_substrings:
+                has_string = re.search(string, page_text, re.IGNORECASE)
+                if has_string and string not in found:
+                    found.append(string)
         self._cleanup()
-        return False
+        return found
 
     def _cleanup(self):
         del self.device

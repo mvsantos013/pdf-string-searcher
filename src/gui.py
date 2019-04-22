@@ -64,8 +64,8 @@ class Application:
         self.log = None
         self.queue = None
         self.searching = False
-        self.link = None
-        self.expression = None
+        self.links = []
+        self.expressions = []
 
     def append_to_text_area(self, string, clean=False, tag=None, log=False):
         """
@@ -89,15 +89,17 @@ class Application:
         """
         Verify inputs before initiating search.
         """
-        self.link = self.link_input.get().encode('utf-8').strip()
-        self.expression = self.expression_input.get().encode('utf-8')
+        self.links = list(set(map(str.strip, self.link_input.get().encode('utf-8').split(';'))))
+        self.expressions = list(set(map(str.strip, self.expression_input.get().encode('utf-8').split(';'))))
 
-        if not self.link or not self.expression:
+        if self.links == [''] or self.expressions == ['']:
             self.append_to_text_area("Preencha os campos obrigatórios e tente novamente.", True)
             return
-        if not network.is_valid_url(self.link):
-            self.append_to_text_area("Link inválido, tente novamente. (Verifique se há http:// ou https:// no início)", True)
-            return
+        for link in self.links:
+            if not network.is_valid_url(link):
+                self.append_to_text_area("Link inválido: " + link, True)
+                self.append_to_text_area("Link inválido, tente novamente. (Verifique se há http:// ou https:// no início)")
+                return
         self.append_to_text_area("", True)
 
         self.prepare_to_search()
@@ -115,8 +117,8 @@ class Application:
         timestamp = time.strftime("%Y%m%d-%H%M%S") + ".log.txt"
         self.log = open('log/' + timestamp, "w")
         self.log.write("Resultados da busca\n")
-        self.log.write("Expressão: " + self.expression + "\n")
-        self.log.write("Link: " + self.link + "\n")
+        self.log.write("Expressão/Expressões: " + ', '.join(self.expressions) + "\n")
+        self.log.write("Link(s): " + ', '.join(self.links) + "\n")
         self.log.write("-------------------\n\n")
 
         self.master.after(200, self.search_url)
@@ -129,31 +131,38 @@ class Application:
         self.pdf_index = 0
 
         # Return if url response error
-        try:
-            response = network.get_response_from_url(self.link)
-        except Exception:
-            self.append_to_text_area("Algo de errado aconteceu, tente estas instruções:\n", True)
-            self.append_to_text_area("  - Verificar a conexão com a internet.\n")
-            self.append_to_text_area("  - Tentar um novo link.\n")
+        for link in self.links:
+            try:
+                response = network.get_response_from_url(link)
+                # Check if url is already a pdf, if not search for all pdfs in the url.
+                if network.is_response_pdf_file(response):
+                    self.pdfs_links.append(link)
+                else:
+                    self.pdfs_links.extend(network.extract_pdfs_links(response))
+            except Exception:
+                self.append_to_text_area("Não foi possível pesquisar neste link: " + link + "\n", True)
+                self.append_to_text_area("Tente estas instruções:\n")
+                self.append_to_text_area("  - Verificar a conexão com a internet.\n")
+                self.append_to_text_area("  - Tentar um novo link.\n\n")
+                continue
+
+        if len(self.pdfs_links) == 0:
+            self.append_to_text_area("\nNenhum PDF encontrado.\n")
             self.end_search()
             return
 
-        # Check if url is already a pdf, if not search for all pdfs in the url.
-        if network.is_response_pdf_file(response):
-            self.pdfs_links.append(self.link)
-        else:
-            self.pdfs_links = network.extract_pdfs_links(response)
-
-        if len(self.pdfs_links) == 0:
-            self.append_to_text_area("Nenhum aquivo PDF foi encontrado no link fornecido.", True)
-            return
-
         self.append_to_text_area("Estas informações serão salvas na pasta: %s\\log\\\n\n" % os.getcwd(), True)
-        self.append_to_text_area("(%d) PDFs encontrados no link fornecido.\n" % len(self.pdfs_links), log=True)
-        self.append_to_text_area("Começando busca pela expressão '" + self.expression + "'.\n\n", log=True)
+        self.append_to_text_area("(%d) PDFs encontrados.\n" % len(self.pdfs_links), log=True)
+        self.append_to_text_area("Começando busca pela expressão/expressões:\n", log=True)
+        for expression in self.expressions:
+            self.append_to_text_area("    " + expression + "\n", tag='success', log=True)
+        self.append_to_text_area("Nos links:\n", log=True)
+        for link in self.links:
+            self.append_to_text_area("    " + link + "\n", tag='success', log=True)
+        self.append_to_text_area("\n", log=True)
 
         self.queue = Queue.Queue()
-        PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expression).start()
+        PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressions).start()
 
         self.master.after(100, self.process_queue)
 
@@ -170,11 +179,11 @@ class Application:
                 if task_result != 'end_of_list':
                     link = network.get_filename_from_url(self.pdfs_links[self.pdf_index])
                     self.append_to_text_area("(%d/%d) Verificando '%s'.\n" % (self.pdf_index + 1, len(self.pdfs_links), link), log=True)
-                    if task_result:
-                        self.append_to_text_area(">>> Expressão encontrada em '" + task_result + "'\n", tag='success', log=True)
+                    if task_result[0]:
+                        self.append_to_text_area(">>> '" + ', '.join(task_result[0]) + "' encontrado em '" + str(task_result[1]) + "'\n", tag='success', log=True)
                     self.pdf_index += 1
 
-                    PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expression).start()
+                    PdfStringSearcherTask(self.queue, self.pdf_index, self.pdfs_links, self.expressions).start()
                     self.master.after(100, self.process_queue)
                 else:
                     self.end_search()
@@ -205,13 +214,14 @@ class PdfStringSearcherTask(threading.Thread):
     """
     This class takes care of pdf string search, it runs in a separated thread so it doesn't freeze the GUI.
     """
-    def __init__(self, queue, pdf_index, pdfs_links, expressao):
+    def __init__(self, queue, pdf_index, pdfs_links, expressions):
         threading.Thread.__init__(self)
         self.queue = queue
         self.pdf_index = pdf_index
         self.pdfs_links = pdfs_links
-        self.expressao = expressao
-        self.pdf_has_string = False
+        self.expressions = expressions
+        self.strings_found = []
+        self.pdf_url = ""
 
     def run(self):
         if self.pdf_index < len(self.pdfs_links):
@@ -221,10 +231,11 @@ class PdfStringSearcherTask(threading.Thread):
             if network.is_response_pdf_file(response):
                 f = util.binary_to_file(network.extract_content_from_response(response))
                 pdf = PdfStringSearcher(f)
-                if pdf.contains_substring(self.expressao):
-                    self.pdf_has_string = str(network.get_url(response))
+                self.strings_found = pdf.search_substrings(self.expressions)
+                if self.strings_found:
+                    self.pdf_url = str(network.get_url(response))
                 f.close()
-            self.queue.put(self.pdf_has_string)
+            self.queue.put([self.strings_found, self.pdf_url])
         else:
             self.queue.put("end_of_list")
 
@@ -237,7 +248,8 @@ def guia():
               "expressão fornecida e avisa se o(s) PDF(s) contém a expressão (Internet é necessária)\n\n" + \
               "Campo Link: link de um PDF ou de uma página que contenha links de PDFs. ex: http://www.google.com.br\n\n" +\
               "Campo Expressão: Expressão a ser buscada, letras maiúsculas não diferem das minúsculas (EXPRESSÃO" + \
-              " = ExPrEsSãO)\n\nAs informações são salvas dentro da pasta log.\n\n" + \
+              " = ExPrEsSãO)\n\nAmbos os campos aceitam mais de um argumento, basta separa-los por ';'. ex: Pedro; Hugo; Vitor." + \
+              "\n\nAs informações são salvas dentro da pasta log.\n\n" + \
               "Código fonte do projeto:\n    https://github.com/mvsantos013/pdf-string-searcher"
     messagebox.showinfo("Guia de uso", message)
 

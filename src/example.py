@@ -10,7 +10,7 @@ if __name__ == '__main__':
     url = "http://www.africau.edu/images/default/sample.pdf"
 
     # Expression to be searched
-    expression = "Boring"
+    expressions = ["Boring"]
 
     # Get response from url
     response = network.get_response_from_url(url)
@@ -22,12 +22,12 @@ if __name__ == '__main__':
         f = util.binary_to_file(network.extract_content_from_response(response))
         pdf = PdfStringSearcher(f)
         # Search for expression in pdf, this might take some time
-        has_string = pdf.contains_substring(expression)
+        strings_found = pdf.search_substrings(expressions)
         # closes file after search
         f.close()
 
-        if has_string:
-            print ("Expression '" + expression + "' found at: " + network.get_url(response))
+        if strings_found:
+            print ("Expression(s) '" + ', '.join(expressions) + "' found at: " + network.get_url(response))
         else:
             print "Expression not found"
     else:
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             if network.is_response_pdf_file(response):
                 f = util.binary_to_file(network.extract_content_from_response(response))
                 pdf = PdfStringSearcher(f)
-                has_string = pdf.contains_substring(expression)
+                strings_found = pdf.search_substrings(expressions)
                 f.close()
-                if has_string:
-                    print ("Expression '" + expression + "' found at: " + network.get_url(response))
+                if strings_found:
+                    print ("Expression(s) '" + ', '.join(expressions) + "' found at: " + network.get_url(response))
