@@ -18,7 +18,7 @@ class TestPdfStringSearcher(unittest.TestCase):
         response = network.get_response_from_url(pdf_url)
         f = util.binary_to_file(network.extract_content_from_response(response))
         doc = PdfStringSearcher(f)
-        self.assertTrue(doc.contains_substring("Boring"))
+        self.assertTrue(doc.search_substrings(["Boring"]) == ["Boring"])
         f.close()
 
 
