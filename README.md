@@ -7,9 +7,9 @@ This project provides a way to search for an expression in a PDF file, it can be
 # Explaining user interface
 You have a basic interface with only two input fields:
 - Link
-  - This is a url of a webpage, it can be a normal page or a PDF one. If it is a normal page the algorithm will look for every PDF link at the page and search for the expression in each one of them. If it is a PDF page it will search for the expression in that PDF only.
+  - This is a url of a webpage, it can be a normal page or a PDF one. If it is a normal page the algorithm will look for every PDF link at the page and search for the expression in each one of them. If it is a PDF page it will search for the expression in that PDF only. You can search multiple links at time separating them by ';'.
 - Expression
-  - This is a text that you want to search in the PDFs, it is case insensitive, in other words, the expression "nAmE" is the same as "NAME".
+  - This is a text that you want to search in the PDFs, it is case insensitive, in other words, the expression "nAmE" is the same as "NAME". You can search for multiple expressions separating them by ';'.
   
 <p align="center">
   <img src="https://github.com/mvsantos013/pdf-string-searcher/blob/master/resources/imgs/pdf-string-searcher-gui.png?raw=true">
