@@ -6,9 +6,9 @@ import utils.util as util
 import Queue
 import threading
 from pdf.pdfstringsearcher import PdfStringSearcher
-from tkinter import messagebox
-import tkinter.scrolledtext as tkst
-from tkinter import *
+import tkMessageBox as messagebox
+import ScrolledText as tkst
+from Tkinter import *
 
 
 class Application:
@@ -128,7 +128,7 @@ class Application:
         Search for pdfs in the url and start string search.
         """
         self.pdfs_links = []
-        self.pdf_index = 114
+        self.pdf_index = 0
 
         # Return if url response error
         for link in self.links:
