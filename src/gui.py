@@ -128,7 +128,7 @@ class Application:
         Search for pdfs in the url and start string search.
         """
         self.pdfs_links = []
-        self.pdf_index = 0
+        self.pdf_index = 114
 
         # Return if url response error
         for link in self.links:
@@ -140,7 +140,7 @@ class Application:
                 else:
                     self.pdfs_links.extend(network.extract_pdfs_links(response))
             except Exception:
-                self.append_to_text_area("Não foi possível pesquisar neste link: " + link + "\n", True)
+                self.append_to_text_area("Não foi possível pesquisar neste link: " + link + "\n")
                 self.append_to_text_area("Tente estas instruções:\n")
                 self.append_to_text_area("  - Verificar a conexão com a internet.\n")
                 self.append_to_text_area("  - Tentar um novo link.\n\n")
@@ -227,15 +227,19 @@ class PdfStringSearcherTask(threading.Thread):
         if self.pdf_index < len(self.pdfs_links):
             # This algorithm is explained in src/example.py
             link = self.pdfs_links[self.pdf_index]
-            response = network.get_response_from_url(link)
-            if network.is_response_pdf_file(response):
-                f = util.binary_to_file(network.extract_content_from_response(response))
-                pdf = PdfStringSearcher(f)
-                self.strings_found = pdf.search_substrings(self.expressions)
-                if self.strings_found:
-                    self.pdf_url = str(network.get_url(response))
-                f.close()
-            self.queue.put([self.strings_found, self.pdf_url])
+
+            try:
+                response = network.get_response_from_url(link)
+                if network.is_response_pdf_file(response):
+                    f = util.binary_to_file(network.extract_content_from_response(response))
+                    pdf = PdfStringSearcher(f)
+                    self.strings_found = pdf.search_substrings(self.expressions)
+                    if self.strings_found:
+                        self.pdf_url = str(network.get_url(response))
+                    f.close()
+                self.queue.put([self.strings_found, self.pdf_url])
+            except Exception:
+                self.queue.put([[], link])
         else:
             self.queue.put("end_of_list")
 

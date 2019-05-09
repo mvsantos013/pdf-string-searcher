@@ -4,7 +4,7 @@ from pdfminer.pdfparser import PDFParser, PDFDocument
 from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.converter import TextConverter
 from pdfpageinterpreter import PDFPageInterpreter
-import re
+#import re
 
 
 class PdfStringSearcher(list):
@@ -38,7 +38,7 @@ class PdfStringSearcher(list):
                 break
             page_text = self.interpreter.process_page(page)
             for string in list_substrings:
-                has_string = re.search(string, page_text, re.IGNORECASE)
+                has_string = string.lower() in page_text.lower()
                 if has_string and string not in found:
                     found.append(string)
         self._cleanup()
